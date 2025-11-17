@@ -1,0 +1,51 @@
+{
+  "apiBase": "https://api.hexmon.local",
+  "wsUrl": "wss://api.hexmon.local/ws",
+  "deviceId": "",
+  "mtls": {
+    "enabled": true,
+    "certPath": "/var/lib/hexmon/certs/client.crt",
+    "keyPath": "/var/lib/hexmon/certs/client.key",
+    "caPath": "/var/lib/hexmon/certs/ca.crt",
+    "autoRenew": true,
+    "renewBeforeDays": 30
+  },
+  "cache": {
+    "path": "/var/cache/hexmon",
+    "maxBytes": 10737418240,
+    "prefetchConcurrency": 3,
+    "bandwidthBudgetMbps": 50
+  },
+  "intervals": {
+    "heartbeatMs": 60000,
+    "commandPollMs": 30000,
+    "schedulePollMs": 300000,
+    "healthCheckMs": 60000
+  },
+  "log": {
+    "level": "info",
+    "shipPolicy": "batch",
+    "rotationSizeMb": 100,
+    "rotationIntervalHours": 24,
+    "compressionEnabled": true
+  },
+  "power": {
+    "dpmsEnabled": true,
+    "preventBlanking": true,
+    "scheduleEnabled": false,
+    "onTime": "08:00",
+    "offTime": "18:00"
+  },
+  "security": {
+    "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'",
+    "allowedDomains": [
+      "hexmon.local",
+      "*.hexmon.com"
+    ],
+    "disableEval": true,
+    "contextIsolation": true,
+    "nodeIntegration": false,
+    "sandbox": true
+  }
+}
+

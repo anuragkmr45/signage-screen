@@ -1,0 +1,264 @@
+/**
+ * HTTP Client - Axios-based client with mTLS support
+ * Handles all HTTP communication with the backend
+ */
+
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import * as https from 'https'
+import { getLogger } from '../../../common/logger'
+import { getConfigManager } from '../../../common/config'
+import { getCertificateManager } from '../cert-manager'
+import { NetworkError } from '../../../common/types'
+import { retryWithBackoff } from '../../../common/utils'
+
+const logger = getLogger('http-client')
+
+export class HttpClient {
+  private client: AxiosInstance
+  private mtlsEnabled: boolean
+
+  constructor() {
+    const config = getConfigManager().getConfig()
+    this.mtlsEnabled = config.mtls.enabled
+
+    this.client = axios.create({
+      baseURL: config.apiBase,
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'HexmonSignage/1.0.0',
+      },
+    })
+
+    // Setup interceptors
+    this.setupInterceptors()
+
+    logger.info({ baseURL: config.apiBase, mtlsEnabled: this.mtlsEnabled }, 'HTTP client initialized')
+  }
+
+  /**
+   * Setup request/response interceptors
+   */
+  private setupInterceptors(): void {
+    // Request interceptor
+    this.client.interceptors.request.use(
+      async (config) => {
+        // Add mTLS certificates if enabled
+        if (this.mtlsEnabled) {
+          const httpsAgent = await this.createMTLSAgent()
+          config.httpsAgent = httpsAgent
+        }
+
+        logger.debug({ method: config.method, url: config.url }, 'HTTP request')
+        return config
+      },
+      (error) => {
+        logger.error({ error }, 'Request interceptor error')
+        return Promise.reject(error)
+      }
+    )
+
+    // Response interceptor
+    this.client.interceptors.response.use(
+      (response) => {
+        logger.debug({ status: response.status, url: response.config.url }, 'HTTP response')
+        return response
+      },
+      (error) => {
+        if (error.response) {
+          logger.error(
+            {
+              status: error.response.status,
+              url: error.config?.url,
+              data: error.response.data,
+            },
+            'HTTP error response'
+          )
+        } else if (error.request) {
+          logger.error({ url: error.config?.url }, 'No response received')
+        } else {
+          logger.error({ error: error.message }, 'Request setup error')
+        }
+        return Promise.reject(error)
+      }
+    )
+  }
+
+  /**
+   * Create HTTPS agent with mTLS certificates
+   */
+  private async createMTLSAgent(): Promise<https.Agent> {
+    try {
+      const certManager = getCertificateManager()
+      const certs = await certManager.loadCertificates()
+
+      return new https.Agent({
+        cert: certs.cert,
+        key: certs.key,
+        ca: certs.ca,
+        rejectUnauthorized: true,
+      })
+    } catch (error) {
+      logger.error({ error }, 'Failed to create mTLS agent')
+      throw new NetworkError('Failed to load mTLS certificates', { error })
+    }
+  }
+
+  /**
+   * GET request with retry
+   */
+  async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    return retryWithBackoff(
+      async () => {
+        const response = await this.client.get<T>(url, config)
+        return response.data
+      },
+      {
+        maxAttempts: 3,
+        baseDelayMs: 1000,
+        maxDelayMs: 10000,
+        onRetry: (attempt, error) => {
+          logger.warn({ url, attempt, error: error.message }, 'Retrying GET request')
+        },
+      }
+    )
+  }
+
+  /**
+   * POST request with retry
+   */
+  async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    return retryWithBackoff(
+      async () => {
+        const response = await this.client.post<T>(url, data, config)
+        return response.data
+      },
+      {
+        maxAttempts: 3,
+        baseDelayMs: 1000,
+        maxDelayMs: 10000,
+        onRetry: (attempt, error) => {
+          logger.warn({ url, attempt, error: error.message }, 'Retrying POST request')
+        },
+      }
+    )
+  }
+
+  /**
+   * PUT request with retry
+   */
+  async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    return retryWithBackoff(
+      async () => {
+        const response = await this.client.put<T>(url, data, config)
+        return response.data
+      },
+      {
+        maxAttempts: 3,
+        baseDelayMs: 1000,
+        maxDelayMs: 10000,
+        onRetry: (attempt, error) => {
+          logger.warn({ url, attempt, error: error.message }, 'Retrying PUT request')
+        },
+      }
+    )
+  }
+
+  /**
+   * DELETE request with retry
+   */
+  async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    return retryWithBackoff(
+      async () => {
+        const response = await this.client.delete<T>(url, config)
+        return response.data
+      },
+      {
+        maxAttempts: 3,
+        baseDelayMs: 1000,
+        maxDelayMs: 10000,
+        onRetry: (attempt, error) => {
+          logger.warn({ url, attempt, error: error.message }, 'Retrying DELETE request')
+        },
+      }
+    )
+  }
+
+  /**
+   * HEAD request (no retry for HEAD)
+   */
+  async head(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse> {
+    return this.client.head(url, config)
+  }
+
+  /**
+   * Check connectivity
+   */
+  async checkConnectivity(): Promise<boolean> {
+    try {
+      await this.head('/health')
+      return true
+    } catch (error) {
+      logger.warn('Connectivity check failed')
+      return false
+    }
+  }
+
+  /**
+   * Enable mTLS
+   */
+  enableMTLS(): void {
+    this.mtlsEnabled = true
+    logger.info('mTLS enabled')
+  }
+
+  /**
+   * Disable mTLS
+   */
+  disableMTLS(): void {
+    this.mtlsEnabled = false
+    logger.info('mTLS disabled')
+  }
+
+  /**
+   * Update base URL
+   */
+  setBaseURL(baseURL: string): void {
+    this.client.defaults.baseURL = baseURL
+    logger.info({ baseURL }, 'Base URL updated')
+  }
+
+  /**
+   * Set authorization header
+   */
+  setAuthToken(token: string): void {
+    this.client.defaults.headers.common['Authorization'] = `Bearer ${token}`
+    logger.debug('Authorization token set')
+  }
+
+  /**
+   * Clear authorization header
+   */
+  clearAuthToken(): void {
+    delete this.client.defaults.headers.common['Authorization']
+    logger.debug('Authorization token cleared')
+  }
+
+  /**
+   * Get axios instance for advanced usage
+   */
+  getAxiosInstance(): AxiosInstance {
+    return this.client
+  }
+}
+
+// Singleton instance
+let httpClient: HttpClient | null = null
+
+export function getHttpClient(): HttpClient {
+  if (!httpClient) {
+    httpClient = new HttpClient()
+  }
+  return httpClient
+}
+
