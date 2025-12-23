@@ -4,7 +4,21 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
+import * as os from 'os'
 import { AppConfig } from './types'
+
+const isDevelopment = process.env['NODE_ENV'] === 'development'
+const homeDir = os.homedir() || '/tmp'
+
+const DEFAULT_CACHE_PATH =
+  process.env['HEXMON_CACHE_PATH'] || (isDevelopment ? path.join(homeDir, '.hexmon', 'cache') : '/var/cache/hexmon')
+
+const DEFAULT_CERT_DIR =
+  process.env['HEXMON_MTLS_CERT_DIR'] || (isDevelopment ? path.join(homeDir, '.hexmon', 'certs') : '/var/lib/hexmon/certs')
+
+const DEFAULT_CERT_PATH = process.env['HEXMON_MTLS_CERT_PATH'] || path.join(DEFAULT_CERT_DIR, 'client.crt')
+const DEFAULT_KEY_PATH = process.env['HEXMON_MTLS_KEY_PATH'] || path.join(DEFAULT_CERT_DIR, 'client.key')
+const DEFAULT_CA_PATH = process.env['HEXMON_MTLS_CA_PATH'] || path.join(DEFAULT_CERT_DIR, 'ca.crt')
 
 const DEFAULT_CONFIG: AppConfig = {
   apiBase: process.env['HEXMON_API_BASE'] || 'https://api.hexmon.local',
@@ -12,14 +26,14 @@ const DEFAULT_CONFIG: AppConfig = {
   deviceId: process.env['HEXMON_DEVICE_ID'] || '',
   mtls: {
     enabled: process.env['HEXMON_MTLS_ENABLED'] === 'true',
-    certPath: process.env['HEXMON_MTLS_CERT_PATH'] || '/var/lib/hexmon/certs/client.crt',
-    keyPath: process.env['HEXMON_MTLS_KEY_PATH'] || '/var/lib/hexmon/certs/client.key',
-    caPath: process.env['HEXMON_MTLS_CA_PATH'] || '/var/lib/hexmon/certs/ca.crt',
+    certPath: DEFAULT_CERT_PATH,
+    keyPath: DEFAULT_KEY_PATH,
+    caPath: DEFAULT_CA_PATH,
     autoRenew: process.env['HEXMON_MTLS_AUTO_RENEW'] !== 'false',
     renewBeforeDays: parseInt(process.env['HEXMON_MTLS_RENEW_BEFORE_DAYS'] || '30', 10),
   },
   cache: {
-    path: process.env['HEXMON_CACHE_PATH'] || '/var/cache/hexmon',
+    path: DEFAULT_CACHE_PATH,
     maxBytes: parseInt(process.env['HEXMON_CACHE_MAX_BYTES'] || String(10 * 1024 * 1024 * 1024), 10), // 10GB default
     prefetchConcurrency: parseInt(process.env['HEXMON_CACHE_PREFETCH_CONCURRENCY'] || '3', 10),
     bandwidthBudgetMbps: parseInt(process.env['HEXMON_CACHE_BANDWIDTH_BUDGET_MBPS'] || '50', 10),
@@ -230,4 +244,3 @@ export function getConfigManager(configPath?: string): ConfigManager {
 export function resetConfigManager(): void {
   configManager = null
 }
-
