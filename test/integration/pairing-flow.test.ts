@@ -3,11 +3,11 @@
  * Tests: CSR generation → certificate storage → mTLS activation
  */
 
-import { expect } from 'chai'
-import * as sinon from 'sinon'
-import * as fs from 'fs'
-import * as path from 'path'
-import { createTempDir, cleanupTempDir, createMockCertificate } from '../helpers/test-utils.ts'
+const { expect } = require('chai')
+const sinon = require('sinon')
+const fs = require('fs')
+const path = require('path')
+const { createTempDir, cleanupTempDir, createMockCertificate } = require('../helpers/test-utils.ts')
 
 describe('Pairing Flow Integration', () => {
   let tempDir: string

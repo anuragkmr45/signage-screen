@@ -3,9 +3,9 @@
  * Tests resilience to connection loss, timeouts, DNS failures
  */
 
-import { expect } from 'chai'
-import * as sinon from 'sinon'
-import { sleep, waitFor } from '../helpers/test-utils.ts'
+const { expect } = require('chai')
+const sinon = require('sinon')
+const { sleep, waitFor } = require('../helpers/test-utils.ts')
 
 describe('Network Failure Fault Injection', () => {
   let sandbox: sinon.SinonSandbox
@@ -29,7 +29,7 @@ describe('Network Failure Fault Injection', () => {
       mockRequest.onCall(2).resolves({ data: 'success' })
 
       const { retryWithBackoff } = require('../../src/common/utils')
-      const result = await retryWithBackoff(mockRequest, 3, 100)
+      const result = await retryWithBackoff(mockRequest, { maxAttempts: 3, baseDelayMs: 100 })
 
       expect(result.data).to.equal('success')
       expect(mockRequest.callCount).to.equal(3)
@@ -42,7 +42,7 @@ describe('Network Failure Fault Injection', () => {
       const { retryWithBackoff } = require('../../src/common/utils')
 
       try {
-        await retryWithBackoff(mockRequest, 3, 10)
+        await retryWithBackoff(mockRequest, { maxAttempts: 3, baseDelayMs: 10 })
         expect.fail('Should have thrown error')
       } catch (error: any) {
         expect(error.message).to.include('ENOTFOUND')
@@ -56,7 +56,7 @@ describe('Network Failure Fault Injection', () => {
       const { retryWithBackoff } = require('../../src/common/utils')
 
       try {
-        await retryWithBackoff(mockRequest, 3, 10)
+        await retryWithBackoff(mockRequest, { maxAttempts: 3, baseDelayMs: 10 })
         expect.fail('Should have thrown error')
       } catch (error: any) {
         expect(error.message).to.include('ECONNREFUSED')
@@ -200,7 +200,7 @@ describe('Network Failure Fault Injection', () => {
       mockRequest.onCall(1).resolves({ data: 'success' })
 
       const { retryWithBackoff } = require('../../src/common/utils')
-      const result = await retryWithBackoff(mockRequest, 3, 100)
+      const result = await retryWithBackoff(mockRequest, { maxAttempts: 3, baseDelayMs: 100 })
 
       expect(result.data).to.equal('success')
     })
@@ -251,4 +251,3 @@ describe('Network Failure Fault Injection', () => {
     })
   })
 })
-

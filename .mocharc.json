@@ -1,8 +1,6 @@
 {
-  "loader": "ts-node/esm",
-  "import": ["test/setup.ts"],
+  "require": ["ts-node/register/transpile-only", "./test/setup.cjs"],
   "extensions": ["ts"],
-  "spec": ["test/**/*.test.ts"],
   "timeout": 5000,
   "color": true,
   "reporter": "spec",

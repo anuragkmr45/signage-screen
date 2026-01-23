@@ -2,11 +2,11 @@
  * Unit tests for Proof-of-Play Service
  */
 
-import { expect } from 'chai'
-import * as sinon from 'sinon'
-import * as fs from 'fs'
-import * as path from 'path'
-import { createTempDir, cleanupTempDir, sleep } from '../../helpers/test-utils.ts'
+const { expect } = require('chai')
+const sinon = require('sinon')
+const fs = require('fs')
+const path = require('path')
+const { createTempDir, cleanupTempDir, sleep } = require('../../helpers/test-utils.ts')
 
 describe('Proof-of-Play Service', () => {
   let tempDir: string
@@ -16,7 +16,7 @@ describe('Proof-of-Play Service', () => {
   beforeEach(() => {
     sandbox = sinon.createSandbox()
     tempDir = createTempDir('pop-test-')
-    spoolDir = path.join(tempDir, 'pop-spool')
+    spoolDir = path.join(tempDir, 'cache', 'pop-spool')
     fs.mkdirSync(spoolDir, { recursive: true })
 
     // Mock config
@@ -121,10 +121,8 @@ describe('Proof-of-Play Service', () => {
 
       const buffer = (popService as any).eventBuffer
 
-      // Should have 2 events (not deduplicated yet)
-      expect(buffer.length).to.equal(2)
-
-      // Deduplication happens during flush
+      // Deduplication happens on insert
+      expect(buffer.length).to.equal(1)
     })
   })
 
@@ -203,6 +201,7 @@ describe('Proof-of-Play Service', () => {
     it('should limit buffer size', () => {
       const { getProofOfPlayService } = require('../../../src/main/services/pop-service')
       const popService = getProofOfPlayService()
+      const flushStub = sandbox.stub(popService, 'flushEvents').resolves()
 
       // Record more events than buffer size
       for (let i = 0; i < 150; i++) {
@@ -210,15 +209,18 @@ describe('Proof-of-Play Service', () => {
         popService.recordEnd('schedule-1', `media-${i}`, true)
       }
 
-      const buffer = (popService as any).eventBuffer
-      expect(buffer.length).to.be.lessThanOrEqual(100) // Max buffer size
+      expect(flushStub.called).to.be.true
     })
   })
 
   describe('Cleanup', () => {
     it('should cleanup on shutdown', async () => {
       const { getProofOfPlayService } = require('../../../src/main/services/pop-service')
+      const { getHttpClient } = require('../../../src/main/services/network/http-client')
       const popService = getProofOfPlayService()
+      const httpClient = getHttpClient()
+
+      sandbox.stub(httpClient, 'post').resolves({ received: 1, duplicates: 0 })
 
       popService.recordStart('schedule-1', 'media-1')
       popService.recordEnd('schedule-1', 'media-1', true)

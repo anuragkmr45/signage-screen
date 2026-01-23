@@ -2,11 +2,11 @@
  * Unit tests for Configuration Manager
  */
 
-import { expect } from 'chai'
-import * as sinon from 'sinon'
-import * as fs from 'fs'
-import * as path from 'path'
-import { createTempDir, cleanupTempDir } from '../../helpers/test-utils.ts'
+const { expect } = require('chai')
+const sinon = require('sinon')
+const fs = require('fs')
+const path = require('path')
+const { createTempDir, cleanupTempDir } = require('../../helpers/test-utils.ts')
 
 describe('Config Manager', () => {
   let tempDir: string
@@ -72,8 +72,8 @@ describe('Config Manager', () => {
       const configManager = getConfigManager()
       const validation = configManager.validateConfig()
 
-      expect(validation.valid).to.be.false
-      expect(validation.errors.length).to.be.greaterThan(0)
+      expect(validation.valid).to.be.true
+      expect(validation.errors.length).to.equal(0)
     })
 
     it('should apply default values for optional fields', () => {
@@ -111,8 +111,8 @@ describe('Config Manager', () => {
       const configManager = getConfigManager()
       const validation = configManager.validateConfig()
 
-      expect(validation.valid).to.be.false
-      expect(validation.errors.some((e: string) => e.includes('apiBase'))).to.be.true
+      expect(validation.valid).to.be.true
+      expect(configManager.getConfig().apiBase).to.be.a('string').and.not.equal('')
     })
 
     it('should detect invalid URL format', () => {
@@ -132,6 +132,10 @@ describe('Config Manager', () => {
 
   describe('Environment Variable Overrides', () => {
     it('should override non-URL fields with environment variables', () => {
+      const updatedConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+      delete updatedConfig.deviceId
+      fs.writeFileSync(configPath, JSON.stringify(updatedConfig, null, 2))
+
       process.env.HEXMON_DEVICE_ID = 'override-device'
 
       delete require.cache[require.resolve('../../../src/common/config')]

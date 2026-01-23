@@ -74,8 +74,8 @@ export class PairingService {
       hostname: os.hostname(),
       platform: os.platform(),
       arch: os.arch(),
-      appVersion: app.getVersion(),
-      electronVersion: process.versions.electron,
+      appVersion: typeof app?.getVersion === 'function' ? app.getVersion() : 'unknown',
+      electronVersion: process.versions.electron || 'unknown',
       nodeVersion: process.versions.node,
     }
   }

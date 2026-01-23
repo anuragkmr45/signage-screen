@@ -3,8 +3,8 @@
  * Target: ≤100ms p95 jitter
  */
 
-import { expect } from 'chai'
-import { createMockSchedule, sleep } from '../helpers/test-utils.ts'
+const { expect } = require('chai')
+const { createMockSchedule, sleep } = require('../helpers/test-utils.ts')
 
 describe('Timeline Jitter Performance', () => {
   describe('Timeline Scheduler', () => {
@@ -106,4 +106,3 @@ describe('Timeline Jitter Performance', () => {
     })
   })
 })
-

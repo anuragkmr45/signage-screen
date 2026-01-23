@@ -2,21 +2,21 @@
  * Unit tests for common utilities
  */
 
-import { expect } from 'chai'
-import * as sinon from 'sinon'
-import * as fs from 'fs'
-import * as path from 'path'
-import { createTempDir, cleanupTempDir, createTestFile, calculateHash } from '../../helpers/test-utils.ts'
+const { expect } = require('chai')
+const sinon = require('sinon')
+const fs = require('fs')
+const path = require('path')
+const { createTempDir, cleanupTempDir, createTestFile, calculateHash } = require('../../helpers/test-utils.ts')
 
 // Import functions to test
-import {
-  hashFile,
+const {
+  calculateFileHash,
   atomicWrite,
   ensureDir,
   retryWithBackoff,
-  sanitizePath,
-  parseTimeString,
-} from '../../../src/common/utils.ts'
+  sanitizeFilename,
+  parseTime,
+} = require('../../../src/common/utils.ts')
 
 describe('Common Utils', () => {
   let tempDir: string
@@ -30,14 +30,14 @@ describe('Common Utils', () => {
     sinon.restore()
   })
 
-  describe('hashFile', () => {
+  describe('calculateFileHash', () => {
     it('should calculate SHA-256 hash of file', async () => {
       const filePath = path.join(tempDir, 'test.txt')
       const content = Buffer.from('test content')
       fs.writeFileSync(filePath, content)
 
       const expectedHash = calculateHash(content)
-      const actualHash = await hashFile(filePath)
+      const actualHash = await calculateFileHash(filePath)
 
       expect(actualHash).to.equal(expectedHash)
     })
@@ -46,7 +46,7 @@ describe('Common Utils', () => {
       const filePath = path.join(tempDir, 'nonexistent.txt')
 
       try {
-        await hashFile(filePath)
+        await calculateFileHash(filePath)
         expect.fail('Should have thrown error')
       } catch (error) {
         expect(error).to.be.instanceOf(Error)
@@ -117,7 +117,7 @@ describe('Common Utils', () => {
     it('should succeed on first try', async () => {
       const fn = sinon.stub().resolves('success')
 
-      const result = await retryWithBackoff(fn, 3, 100)
+      const result = await retryWithBackoff(fn, { maxAttempts: 3, baseDelayMs: 100 })
 
       expect(result).to.equal('success')
       expect(fn.callCount).to.equal(1)
@@ -129,7 +129,7 @@ describe('Common Utils', () => {
       fn.onCall(1).rejects(new Error('fail 2'))
       fn.onCall(2).resolves('success')
 
-      const result = await retryWithBackoff(fn, 3, 10)
+      const result = await retryWithBackoff(fn, { maxAttempts: 3, baseDelayMs: 10 })
 
       expect(result).to.equal('success')
       expect(fn.callCount).to.equal(3)
@@ -139,7 +139,7 @@ describe('Common Utils', () => {
       const fn = sinon.stub().rejects(new Error('always fails'))
 
       try {
-        await retryWithBackoff(fn, 3, 10)
+        await retryWithBackoff(fn, { maxAttempts: 3, baseDelayMs: 10 })
         expect.fail('Should have thrown error')
       } catch (error: any) {
         expect(error.message).to.equal('always fails')
@@ -154,7 +154,7 @@ describe('Common Utils', () => {
       fn.onCall(2).resolves('success')
 
       const startTime = Date.now()
-      await retryWithBackoff(fn, 3, 50)
+      await retryWithBackoff(fn, { maxAttempts: 3, baseDelayMs: 50 })
       const elapsed = Date.now() - startTime
 
       // Should have waited at least 50ms + 100ms = 150ms
@@ -162,68 +162,54 @@ describe('Common Utils', () => {
     })
   })
 
-  describe('sanitizePath', () => {
+  describe('sanitizeFilename', () => {
     it('should remove directory traversal attempts', () => {
       const malicious = '../../../etc/passwd'
-      const sanitized = sanitizePath(malicious)
+      const sanitized = sanitizeFilename(malicious)
 
       expect(sanitized).to.not.include('..')
     })
 
     it('should remove null bytes', () => {
       const malicious = 'file\x00.txt'
-      const sanitized = sanitizePath(malicious)
+      const sanitized = sanitizeFilename(malicious)
 
       expect(sanitized).to.not.include('\x00')
     })
 
     it('should allow normal paths', () => {
       const normal = 'path/to/file.txt'
-      const sanitized = sanitizePath(normal)
+      const sanitized = sanitizeFilename(normal)
 
-      expect(sanitized).to.equal(normal)
+      expect(sanitized).to.not.include('/')
     })
 
     it('should handle empty string', () => {
-      const sanitized = sanitizePath('')
+      const sanitized = sanitizeFilename('')
 
       expect(sanitized).to.equal('')
     })
   })
 
-  describe('parseTimeString', () => {
-    it('should parse milliseconds', () => {
-      expect(parseTimeString('1000ms')).to.equal(1000)
-      expect(parseTimeString('500ms')).to.equal(500)
-    })
-
-    it('should parse seconds', () => {
-      expect(parseTimeString('5s')).to.equal(5000)
-      expect(parseTimeString('10s')).to.equal(10000)
-    })
-
-    it('should parse minutes', () => {
-      expect(parseTimeString('2m')).to.equal(120000)
-      expect(parseTimeString('5m')).to.equal(300000)
-    })
-
-    it('should parse hours', () => {
-      expect(parseTimeString('1h')).to.equal(3600000)
-      expect(parseTimeString('2h')).to.equal(7200000)
-    })
-
-    it('should parse days', () => {
-      expect(parseTimeString('1d')).to.equal(86400000)
-      expect(parseTimeString('7d')).to.equal(604800000)
+  describe('parseTime', () => {
+    it('should parse valid time strings', () => {
+      expect(parseTime('00:05')).to.deep.equal({ hours: 0, minutes: 5 })
+      expect(parseTime('12:30')).to.deep.equal({ hours: 12, minutes: 30 })
+      expect(parseTime('23:59')).to.deep.equal({ hours: 23, minutes: 59 })
     })
 
     it('should handle invalid format', () => {
-      expect(parseTimeString('invalid')).to.be.NaN
+      expect(parseTime('invalid')).to.be.null
+      expect(parseTime('5:00')).to.be.null
+    })
+
+    it('should handle out-of-range values', () => {
+      expect(parseTime('24:00')).to.be.null
+      expect(parseTime('00:60')).to.be.null
     })
 
     it('should handle negative values', () => {
-      expect(parseTimeString('-5s')).to.equal(-5000)
+      expect(parseTime('-5:00')).to.be.null
     })
   })
 })
-

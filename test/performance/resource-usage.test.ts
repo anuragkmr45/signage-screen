@@ -3,9 +3,9 @@
  * Targets: CPU <40% p95, Memory <500MB p95
  */
 
-import { expect } from 'chai'
-import * as os from 'os'
-import { sleep } from '../helpers/test-utils.ts'
+const { expect } = require('chai')
+const os = require('os')
+const { sleep } = require('../helpers/test-utils.ts')
 
 describe('Resource Usage Performance', () => {
   /**
@@ -179,4 +179,3 @@ describe('Resource Usage Performance', () => {
     })
   })
 })
-

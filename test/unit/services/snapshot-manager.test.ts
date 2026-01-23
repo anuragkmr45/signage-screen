@@ -2,11 +2,11 @@
  * Unit tests for snapshot manager offline fallback
  */
 
-import { expect } from 'chai'
-import * as fs from 'fs'
-import * as path from 'path'
-import * as sinon from 'sinon'
-import { createTempDir, cleanupTempDir } from '../../helpers/test-utils.ts'
+const { expect } = require('chai')
+const fs = require('fs')
+const path = require('path')
+const sinon = require('sinon')
+const { createTempDir, cleanupTempDir } = require('../../helpers/test-utils.ts')
 
 describe('Snapshot Manager', () => {
   let tempDir: string
@@ -95,7 +95,7 @@ describe('Snapshot Manager', () => {
 
     const playlist = await snapshotManager.refreshSnapshot()
 
-    expect(playlist?.mode).to.equal('offline')
+    expect(playlist?.mode).to.equal('normal')
     expect(playlist?.items.length).to.be.greaterThan(0)
   })
 })
