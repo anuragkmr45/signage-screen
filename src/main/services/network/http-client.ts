@@ -16,6 +16,7 @@ const logger = getLogger('http-client')
 declare module 'axios' {
   export interface AxiosRequestConfig {
     mtls?: boolean
+    retry?: boolean
   }
 }
 
@@ -170,6 +171,10 @@ export class HttpClient {
    * POST request with retry
    */
   async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    if (config?.retry === false) {
+      const response = await this.client.post<T>(url, data, config)
+      return response.data
+    }
     return retryWithBackoff(
       async () => {
         const response = await this.client.post<T>(url, data, config)

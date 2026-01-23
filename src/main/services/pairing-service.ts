@@ -111,6 +111,7 @@ export class PairingService {
       const httpClient = getHttpClient()
       const response = await httpClient.post<PairingResponse>('/api/v1/device-pairing/complete', request, {
         mtls: false,
+        retry: false,
       })
 
       if (response.success === false) {
