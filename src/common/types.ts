@@ -418,13 +418,13 @@ export interface PairingStatusResponse {
 export type PairingOrientation = 'landscape' | 'portrait'
 
 export interface PairingCodeRequest {
-  device_label: string
-  width: number
-  height: number
-  aspect_ratio: string
-  orientation: PairingOrientation
-  model: string
-  codecs: string[]
+  device_label?: string
+  width?: number
+  height?: number
+  aspect_ratio?: string
+  orientation?: PairingOrientation
+  model?: string
+  codecs?: string[]
   device_info?: {
     os?: string
     [key: string]: unknown

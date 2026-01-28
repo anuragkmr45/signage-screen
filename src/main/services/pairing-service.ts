@@ -281,19 +281,25 @@ export class PairingService {
     const display = screen.getPrimaryDisplay()
     const width = display.workAreaSize.width
     const height = display.workAreaSize.height
-    const orientation = width >= height ? 'landscape' : 'portrait'
+    const hasValidDimensions = Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0
+    const orientation = hasValidDimensions && width >= height ? 'landscape' : 'portrait'
 
     const base: PairingCodeRequest = {
-      device_label: os.hostname(),
-      width,
-      height,
-      aspect_ratio: this.getAspectRatio(width, height),
-      orientation,
+      device_label: os.hostname() || 'Hexmon Screen',
       model: process.env['HEXMON_DEVICE_MODEL'] || os.type(),
       codecs: this.getSupportedCodecs(),
       device_info: {
         os: `${os.platform()} ${os.release()}`,
       },
+    }
+
+    if (hasValidDimensions) {
+      base.width = width
+      base.height = height
+      base.aspect_ratio = this.getAspectRatio(width, height)
+      base.orientation = orientation
+    } else {
+      logger.warn({ width, height }, 'Invalid display dimensions, omitting size fields from pairing request')
     }
 
     return {
