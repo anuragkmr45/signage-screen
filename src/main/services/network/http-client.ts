@@ -3,13 +3,14 @@
  * Handles all HTTP communication with the backend
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import axios, { AxiosHeaders, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import * as https from 'https'
 import { getLogger } from '../../../common/logger'
 import { getConfigManager } from '../../../common/config'
 import { getCertificateManager } from '../cert-manager'
 import { NetworkError } from '../../../common/types'
 import { retryWithBackoff } from '../../../common/utils'
+import { X509Certificate } from 'crypto'
 
 const logger = getLogger('http-client')
 
@@ -61,14 +62,26 @@ export class HttpClient {
         if (this.isDeviceEndpoint(config.url || '')) {
           try {
             const certManager = getCertificateManager()
-            const metadata = certManager.getCertificateMetadata()
-            const info = metadata?.fingerprint ? null : await certManager.getCertificateInfo()
-            const fingerprint = metadata?.fingerprint || info?.fingerprint
-            if (fingerprint) {
-              config.headers = config.headers || {}
-              if (!(config.headers as any)['X-Device-Serial']) {
-                ;(config.headers as any)['X-Device-Serial'] = fingerprint
-              }
+
+            // 1) Prefer metadata.serial if you store it (recommended)
+            const metadata = certManager.getCertificateMetadata() as any
+            let serial: string | undefined = metadata?.serial
+
+            // 2) If you only stored "fingerprint" earlier, DO NOT use it for auth.
+            //    Instead parse serial from the actual client certificate.
+            if (!serial) {
+              const certs = await certManager.loadCertificates()
+              const x509 = new X509Certificate(certs.cert) // cert PEM
+              serial = x509.serialNumber // this is the certificate serial
+            }
+
+            if (!serial) {
+              logger.warn({ url: config.url }, 'No device certificate serial available; device auth headers not sent')
+            } else {
+              const headers = AxiosHeaders.from(config.headers ?? {})
+              headers.set('X-Device-Serial', serial)        // backend reads x-device-serial
+              headers.set('X-Device-Cert-Serial', serial)   // backend reads x-device-cert-serial
+              config.headers = headers
             }
           } catch (error) {
             logger.warn({ error }, 'Failed to attach device identity header')
