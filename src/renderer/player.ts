@@ -87,6 +87,45 @@ export function shouldUseManualVideoReplay(item: TimelineItem): boolean {
   return item.type === 'video' && item.loop === true
 }
 
+type TransitionStyleTarget = {
+  style: {
+    transition: string
+    opacity: string
+  }
+}
+
+export function resolveOpacityTransitionStyle(durationMs?: number): string {
+  const safeDuration = Math.max(0, Number(durationMs) || 0)
+  if (safeDuration <= 0) {
+    return ''
+  }
+
+  return `opacity ${safeDuration}ms ease-in-out`
+}
+
+export function prepareElementForFadeIn(
+  element: TransitionStyleTarget,
+  durationMs?: number,
+): boolean {
+  const transitionStyle = resolveOpacityTransitionStyle(durationMs)
+  element.style.transition = transitionStyle
+  if (!transitionStyle) {
+    element.style.opacity = '1'
+    return false
+  }
+
+  element.style.opacity = '0'
+  return true
+}
+
+export function prepareElementForFadeOut(
+  element: TransitionStyleTarget,
+  durationMs?: number,
+): void {
+  element.style.transition = resolveOpacityTransitionStyle(durationMs)
+  element.style.opacity = '0'
+}
+
 type DisposableMediaNode = {
   __hexmonCleanup?: () => void
   pause?: () => void
@@ -715,23 +754,32 @@ class Player {
   private showElement(element: HTMLElement, nextCleanup?: () => void, fadeMs: number = 500): void {
     if (!this.mediaContainer) return
 
+    const safeFadeMs = Math.max(0, fadeMs)
+
     this.runCurrentCleanup()
 
     // Hide current element
     if (this.currentElement) {
       const previous = this.currentElement
-      this.currentElement.style.opacity = '0'
+      prepareElementForFadeOut(previous, safeFadeMs)
       setTimeout(() => {
         if (this.mediaContainer && previous.parentElement === this.mediaContainer) {
           this.disposeScheduledElement(previous)
         }
-      }, Math.max(0, fadeMs))
+      }, safeFadeMs)
     }
 
     // Add and show new element
     element.style.zIndex = '1'
+    const deferFadeIn = prepareElementForFadeIn(element, safeFadeMs)
     this.mediaContainer.appendChild(element)
-    element.style.opacity = '1'
+    if (deferFadeIn) {
+      this.deferStyleCommit(() => {
+        element.style.opacity = '1'
+      })
+    } else {
+      element.style.opacity = '1'
+    }
     this.currentCleanup = nextCleanup
   }
 
@@ -973,18 +1021,26 @@ class Player {
           return
         }
         this.applyFitMode(nextElement, item.fit)
-        nextElement.style.opacity = '1'
+        const slotFadeMs = Math.max(0, item.transitionDurationMs || 0)
+        const deferSlotFadeIn = prepareElementForFadeIn(nextElement, slotFadeMs)
         container.appendChild(nextElement)
+        if (deferSlotFadeIn) {
+          this.deferStyleCommit(() => {
+            nextElement.style.opacity = '1'
+          })
+        } else {
+          nextElement.style.opacity = '1'
+        }
 
         if (activeElement && activeElement.parentElement === container) {
           const previous = activeElement
-          previous.style.opacity = '0'
+          prepareElementForFadeOut(previous, slotFadeMs)
           const fadeTimer = window.setTimeout(() => {
             timers.delete(fadeTimer)
             if (previous.parentElement === container) {
               this.disposeScheduledElement(previous)
             }
-          }, 300)
+          }, slotFadeMs)
           timers.add(fadeTimer)
         }
 
@@ -1100,6 +1156,15 @@ class Player {
     const cleanup = this.currentCleanup
     this.currentCleanup = undefined
     cleanup()
+  }
+
+  private deferStyleCommit(callback: () => void): void {
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(() => callback())
+      return
+    }
+
+    window.setTimeout(() => callback(), 0)
   }
 
   private getItemCompatibility(item: TimelineItem): CompatResult {

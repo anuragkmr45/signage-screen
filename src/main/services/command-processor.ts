@@ -387,11 +387,18 @@ export class CommandProcessor {
       return
     }
 
+    const payload = {
+      ...(deliveryToken ? { delivery_token: deliveryToken } : {}),
+      success: result.success,
+      ...(typeof result.error === 'string' && result.error.length > 0 ? { error: result.error } : {}),
+      ...(typeof result.message === 'string' && result.message.length > 0 ? { message: result.message } : {}),
+    }
+
     try {
       const httpClient = getHttpClient()
       await httpClient.post(
         `/api/v1/device/${deviceId}/commands/${commandId}/ack`,
-        deliveryToken ? { delivery_token: deliveryToken } : {},
+        payload,
         {
           retryPolicy: {
             maxAttempts: 3,
@@ -420,7 +427,7 @@ export class CommandProcessor {
       const queued = await requestQueue.enqueue({
         method: 'POST',
         url: `/api/v1/device/${deviceId}/commands/${commandId}/ack`,
-        data: deliveryToken ? { delivery_token: deliveryToken } : {},
+        data: payload,
         maxRetries: 3,
       })
       if (!queued) {

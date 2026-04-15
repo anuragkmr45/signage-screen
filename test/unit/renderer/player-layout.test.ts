@@ -76,6 +76,68 @@ describe('Player layout helpers', () => {
     ).to.equal(false)
   })
 
+  it('applies configured opacity transition styles to entering and exiting scheduled elements', async () => {
+    const {
+      resolveOpacityTransitionStyle,
+      prepareElementForFadeIn,
+      prepareElementForFadeOut,
+    } = require('../../../src/renderer/player.ts')
+
+    const entering = {
+      style: {
+        transition: '',
+        opacity: '',
+      },
+    }
+
+    const exiting = {
+      style: {
+        transition: '',
+        opacity: '1',
+      },
+    }
+
+    expect(resolveOpacityTransitionStyle(450)).to.equal('opacity 450ms ease-in-out')
+    expect(prepareElementForFadeIn(entering, 450)).to.equal(true)
+    expect(entering.style.transition).to.equal('opacity 450ms ease-in-out')
+    expect(entering.style.opacity).to.equal('0')
+
+    prepareElementForFadeOut(exiting, 450)
+    expect(exiting.style.transition).to.equal('opacity 450ms ease-in-out')
+    expect(exiting.style.opacity).to.equal('0')
+  })
+
+  it('keeps opacity transitions disabled when the configured duration is zero', async () => {
+    const {
+      resolveOpacityTransitionStyle,
+      prepareElementForFadeIn,
+      prepareElementForFadeOut,
+    } = require('../../../src/renderer/player.ts')
+
+    const entering = {
+      style: {
+        transition: 'stale',
+        opacity: '',
+      },
+    }
+
+    const exiting = {
+      style: {
+        transition: 'stale',
+        opacity: '1',
+      },
+    }
+
+    expect(resolveOpacityTransitionStyle(0)).to.equal('')
+    expect(prepareElementForFadeIn(entering, 0)).to.equal(false)
+    expect(entering.style.transition).to.equal('')
+    expect(entering.style.opacity).to.equal('1')
+
+    prepareElementForFadeOut(exiting, 0)
+    expect(exiting.style.transition).to.equal('')
+    expect(exiting.style.opacity).to.equal('0')
+  })
+
   it('recursively tears down scheduled media trees', async () => {
     const { teardownScheduledElementTree } = require('../../../src/renderer/player.ts')
 
