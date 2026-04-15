@@ -184,6 +184,29 @@ describe('Command Processor', () => {
     expect(store.hasRecentCommand('cmd-2')).to.equal(true)
   })
 
+  it('should include the local execution outcome when acknowledging a failed command', async () => {
+    const { getCommandProcessor } = require('../../../src/main/services/command-processor')
+    const { getHttpClient } = require('../../../src/main/services/network/http-client')
+
+    const commandProcessor = getCommandProcessor()
+    const httpClient = getHttpClient()
+    const postStub = sandbox.stub(httpClient, 'post').resolves({ success: true, timestamp: new Date().toISOString() })
+
+    await (commandProcessor as any).acknowledgeCommand('cmd-failed', 'delivery-1', {
+      success: false,
+      error: 'Command rate-limited locally',
+      timestamp: new Date().toISOString(),
+    })
+
+    expect(postStub.calledOnce).to.equal(true)
+    expect(postStub.firstCall.args[0]).to.equal('/api/v1/device/device-1/commands/cmd-failed/ack')
+    expect(postStub.firstCall.args[1]).to.deep.equal({
+      delivery_token: 'delivery-1',
+      success: false,
+      error: 'Command rate-limited locally',
+    })
+  })
+
   it('should apply screenshot interval commands using interval_seconds and enable capture', async () => {
     const { getCommandProcessor } = require('../../../src/main/services/command-processor')
     const { getConfigManager } = require('../../../src/common/config')
