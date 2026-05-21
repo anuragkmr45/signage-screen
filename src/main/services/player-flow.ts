@@ -536,13 +536,34 @@ export class PlayerFlow extends EventEmitter {
       return response
     } catch (error) {
       logger.error({ error }, 'Pairing request failed')
+      const backendAvailable = !this.isBackendUnavailableError(error)
       await this.pairingService.markPairingRequestInDoubt((error as Error).message)
       await this.transitionState(failureState, {
+        backendAvailable,
+        online: false,
         error: (error as Error).message,
         recoveryReason: (error as Error).message,
       })
+      if (!backendAvailable) {
+        this.schedulePairingRequestRetry(overrides, failureState)
+      }
       return null
     }
+  }
+
+  private schedulePairingRequestRetry(
+    overrides?: Partial<PairingCodeRequest>,
+    failureState: Extract<PlayerState, 'HARD_RECOVERY' | 'PAIRING_PENDING'> = 'HARD_RECOVERY'
+  ): void {
+    const delay = this.pairingPollBackoff.getDelay()
+    this.stopPairingTimers()
+    this.pairingPollTimer = setTimeout(() => {
+      if (this.state !== 'HARD_RECOVERY' && this.state !== 'PAIRING_PENDING') {
+        return
+      }
+
+      void this.requestFreshPairingCode(overrides, failureState)
+    }, delay)
   }
 
   private startPairingStatusPolling(): void {
@@ -792,6 +813,21 @@ export class PlayerFlow extends EventEmitter {
     if (!expiresAt) return false
     const parsed = Date.parse(expiresAt)
     return !Number.isNaN(parsed) && parsed > Date.now()
+  }
+
+  private isBackendUnavailableError(error: unknown): boolean {
+    if (this.pairingService.isRetryablePairingRequestError(error)) {
+      return true
+    }
+
+    if (error instanceof DeviceApiError) {
+      return error.code === 'NETWORK_ERROR' || error.transient
+    }
+
+    const message = error instanceof Error ? error.message : String(error || '')
+    return /ECONNREFUSED|ENOTFOUND|ETIMEDOUT|ECONNRESET|EAI_AGAIN|ERR_NETWORK|network|offline|timeout|unavailable/i.test(
+      message
+    )
   }
 
   private async transitionState(next: PlayerState, statusPatch: Partial<PlayerStatus> = {}): Promise<void> {

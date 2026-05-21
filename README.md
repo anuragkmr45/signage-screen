@@ -215,14 +215,18 @@ export HEXMON_LOG_LEVEL="debug"
 
 ## Device Pairing
 
-On first run, the player displays a pairing screen:
+On first run, the player displays an unattended operator screen:
 
-1. Enter the 6-character pairing code from the admin dashboard
-2. Player generates ECDSA (P-256) CSR locally
-3. Sends pairing request to backend: `POST /api/v1/device-pairing/complete`
-4. Receives device certificate and configuration
-5. Stores certificate with 0600 permissions
-6. Switches to mTLS for all subsequent requests
+1. Shows the `HexmonSignage Player` landing state while startup checks run.
+2. Shows a 6-character connection code when backend pairing is available.
+3. Refreshes pairing codes automatically when they expire.
+4. Generates the CSR locally and provisions automatically after CMS approval.
+5. Stores certificates with 0600 permissions.
+6. Switches to mTLS for all subsequent requests.
+
+In `qa` and `production`, the pairing/status surface is display-only for kiosk use. Developer controls such as device label editing, manual refresh, retry, and re-pair are visible only in `dev`.
+
+If the service address is missing, the player stays open and shows `Setup required`. If the backend cannot be reached and no playable content is available, it shows `Service connection unavailable` and keeps retrying automatically. If cached/default playback can continue, playback remains visible with a discreet service notice.
 
 ### Manual Pairing
 

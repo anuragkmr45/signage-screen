@@ -1,16 +1,21 @@
 {
-  "apiBase": "http://localhost:3000",
-  "wsUrl": "ws://localhost:3000/ws",
-  "deviceId": "",
+  "apiBase": "http://192.168.0.2:3000",
+  "wsUrl": "ws://192.168.0.2:3000/ws",
+  "deviceId": "abfbf35e-4691-4fca-84dd-b9ee0230bd88",
   "runtime": {
     "mode": "dev"
   },
   "mtls": {
     "enabled": false,
+    "certPath": "/home/hexmon/.config/hexmon-signage-player/certs/client.crt",
+    "keyPath": "/home/hexmon/.config/hexmon-signage-player/certs/client.key",
+    "caPath": "/home/hexmon/.config/hexmon-signage-player/certs/ca.crt",
+    "strictCertificateValidation": true,
     "autoRenew": true,
     "renewBeforeDays": 30
   },
   "cache": {
+    "path": "/home/hexmon/.config/hexmon-signage-player/cache",
     "maxBytes": 10737418240,
     "prefetchConcurrency": 3,
     "bandwidthBudgetMbps": 50
@@ -38,7 +43,7 @@
     "offTime": "18:00"
   },
   "security": {
-    "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'",
+    "csp": "default-src 'self' data: blob: file: http: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: file: http: https:; media-src 'self' data: blob: file: http: https:; connect-src 'self' data: blob: http: https: ws: wss:; frame-src 'self' data: blob: file: http: https:; worker-src 'self' blob:; font-src 'self' data: http: https:; object-src 'none'",
     "allowedDomains": [
       "hexmon.local",
       "*.hexmon.com"
@@ -47,5 +52,12 @@
     "contextIsolation": true,
     "nodeIntegration": false,
     "sandbox": true
+  },
+  "observability": {
+    "enabled": true,
+    "metricsEnabled": true,
+    "bindAddress": "127.0.0.1",
+    "port": 3300,
+    "allowRemoteAccess": false
   }
 }

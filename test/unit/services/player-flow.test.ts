@@ -145,6 +145,65 @@ describe('Player Flow', () => {
     await playerFlow.start()
 
     expect(playerFlow.getState()).to.equal('HARD_RECOVERY')
+    expect(playerFlow.getStatus().backendAvailable).to.equal(false)
+    await playerFlow.stop()
+  })
+
+  it('should retry fresh pairing automatically after a transient backend failure', async () => {
+    const clock = sandbox.useFakeTimers()
+    sandbox.stub(Math, 'random').returns(0.5)
+
+    const { getPlayerFlow } = require('../../../src/main/services/player-flow')
+    const { getPairingService } = require('../../../src/main/services/pairing-service')
+    const { getDeviceStateStore } = require('../../../src/main/services/device-state-store')
+
+    const stateStore = getDeviceStateStore()
+    await stateStore.clearIdentity()
+    const pairingService = getPairingService()
+
+    sandbox.stub(pairingService, 'getStoredIdentityHealth').returns({ health: 'missing', issues: [] })
+    sandbox.stub(pairingService, 'hasTrustworthyDeviceId').returns(false)
+    const requestStub = sandbox.stub(pairingService, 'requestPairingCode')
+    requestStub.onFirstCall().rejects(new Error('connect ECONNREFUSED 192.168.0.2:3000'))
+    requestStub.onSecondCall().callsFake(async () => {
+      await stateStore.update({
+        deviceId: '11111111-1111-4111-8111-111111111111',
+        pairingCode: 'PAIR12',
+        pairingExpiresAt: new Date(Date.now() + 60000).toISOString(),
+        activePairingMode: 'PAIRING',
+      })
+      return {
+        id: 'pairing-1',
+        device_id: '11111111-1111-4111-8111-111111111111',
+        pairing_code: 'PAIR12',
+        expires_at: new Date(Date.now() + 60000).toISOString(),
+        expires_in: 60,
+        connected: true,
+      }
+    })
+    sandbox.stub(pairingService, 'fetchPairingStatus').resolves({
+      device_id: '11111111-1111-4111-8111-111111111111',
+      screen: null,
+      active_pairing: {
+        mode: 'PAIRING',
+        confirmed: false,
+        pairing_code: 'PAIR12',
+        expires_at: new Date(Date.now() + 60000).toISOString(),
+      },
+    })
+
+    const playerFlow = getPlayerFlow()
+    await playerFlow.start()
+
+    expect(playerFlow.getState()).to.equal('HARD_RECOVERY')
+    expect(playerFlow.getStatus().backendAvailable).to.equal(false)
+
+    await clock.tickAsync(2001)
+
+    expect(requestStub.calledTwice).to.equal(true)
+    expect(playerFlow.getState()).to.equal('PAIRING_PENDING')
+    expect(playerFlow.getStatus().pairingCode).to.equal('PAIR12')
+
     await playerFlow.stop()
   })
 

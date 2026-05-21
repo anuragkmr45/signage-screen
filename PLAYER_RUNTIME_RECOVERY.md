@@ -26,6 +26,14 @@
 - Resolved default media is cached locally for the paired device and is reused during `offline` and `empty` fallback modes when available.
 - Default media rendering uses `contain` and reuses the same aspect-ratio-specific fallback across different resolutions of the same aspect ratio.
 
+## Operator status surface
+- Startup first shows the branded `HexmonSignage Player` landing state, then transitions without operator input.
+- `PAIRING_PENDING` shows a 6-character connection code and expiry when the backend is reachable.
+- Missing service configuration shows `Setup required` with administrator-facing guidance, not raw config keys.
+- Transient backend/network failures during first pairing mark `backendAvailable=false` so the renderer can show `Service connection unavailable` and keep retrying automatically.
+- If paired runtime or soft recovery has playable cached/default/scheduled content, keep playback visible and show only a discreet service notice.
+- `qa` and `production` keep pairing/status display-only; manual refresh, retry, re-pair, and editable label controls are `dev`-only.
+
 ## Proof-of-play policy
 - Proof-of-play is queued locally when offline.
 - Replay queued events in order when connectivity returns.

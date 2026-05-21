@@ -4,8 +4,10 @@
  */
 
 const { expect } = require('chai')
+const fs = require('fs')
+const path = require('path')
 const sinon = require('sinon')
-const { sleep, waitFor } = require('../helpers/test-utils.ts')
+const { cleanupTempDir, createTempDir, sleep, waitFor } = require('../helpers/test-utils.ts')
 
 describe('Network Failure Fault Injection', () => {
   let sandbox: sinon.SinonSandbox
@@ -247,6 +249,124 @@ describe('Network Failure Fault Injection', () => {
         const flushed = queue.splice(0, queue.length)
         expect(flushed.length).to.equal(2)
         expect(queue.length).to.equal(0)
+      }
+    })
+  })
+
+  describe('First Launch Runtime Notice', () => {
+    function clearRuntimeModules() {
+      Object.keys(require.cache).forEach((key) => {
+        if (key.includes('src/main/services') || key.includes('src/common')) {
+          delete require.cache[key]
+        }
+      })
+    }
+
+    it('should stay open and mark backend unavailable when first pairing cannot reach the service', async () => {
+      const tempDir = createTempDir('first-launch-backend-down-')
+      process.env.HEXMON_CONFIG_PATH = path.join(tempDir, 'config.json')
+      fs.writeFileSync(
+        process.env.HEXMON_CONFIG_PATH,
+        JSON.stringify(
+          {
+            apiBase: 'http://192.168.0.2:3000',
+            wsUrl: 'ws://192.168.0.2:3000/ws',
+            deviceId: '',
+            runtime: {
+              mode: 'production',
+            },
+            mtls: {
+              enabled: false,
+              certPath: path.join(tempDir, 'client.crt'),
+              keyPath: path.join(tempDir, 'client.key'),
+              caPath: path.join(tempDir, 'ca.crt'),
+            },
+            cache: {
+              path: path.join(tempDir, 'cache'),
+              maxBytes: 1073741824,
+            },
+            intervals: {
+              heartbeatMs: 30000,
+              commandPollMs: 5000,
+              schedulePollMs: 60000,
+              defaultMediaPollMs: 60000,
+              healthCheckMs: 60000,
+              screenshotMs: 300000,
+            },
+          },
+          null,
+          2
+        )
+      )
+
+      clearRuntimeModules()
+
+      try {
+        const clock = sandbox.useFakeTimers()
+        sandbox.stub(Math, 'random').returns(0.5)
+        const { DeviceApiError } = require('../../src/common/types')
+        const { getPlayerFlow } = require('../../src/main/services/player-flow')
+        const { getPairingService } = require('../../src/main/services/pairing-service')
+        const { getDeviceStateStore } = require('../../src/main/services/device-state-store')
+
+        const stateStore = getDeviceStateStore()
+        await stateStore.clearIdentity()
+        const pairingService = getPairingService()
+        sandbox.stub(pairingService, 'getStoredIdentityHealth').returns({ health: 'missing', issues: [] })
+        sandbox.stub(pairingService, 'hasTrustworthyDeviceId').returns(false)
+        const requestStub = sandbox.stub(pairingService, 'requestPairingCode')
+        requestStub.onFirstCall().rejects(
+          new DeviceApiError({
+            message: 'connect ECONNREFUSED 192.168.0.2:3000',
+            code: 'NETWORK_ERROR',
+            transient: true,
+          })
+        )
+        requestStub.onSecondCall().callsFake(async () => {
+          await stateStore.update({
+            deviceId: '11111111-1111-4111-8111-111111111111',
+            pairingCode: 'PAIR12',
+            pairingExpiresAt: new Date(Date.now() + 60000).toISOString(),
+            activePairingMode: 'PAIRING',
+          })
+          return {
+            id: 'pairing-1',
+            device_id: '11111111-1111-4111-8111-111111111111',
+            pairing_code: 'PAIR12',
+            expires_at: new Date(Date.now() + 60000).toISOString(),
+            expires_in: 60,
+            connected: true,
+          }
+        })
+        sandbox.stub(pairingService, 'fetchPairingStatus').resolves({
+          device_id: '11111111-1111-4111-8111-111111111111',
+          screen: null,
+          active_pairing: {
+            mode: 'PAIRING',
+            confirmed: false,
+            pairing_code: 'PAIR12',
+            expires_at: new Date(Date.now() + 60000).toISOString(),
+          },
+        })
+
+        const playerFlow = getPlayerFlow()
+        await playerFlow.start()
+        const status = playerFlow.getStatus()
+
+        expect(playerFlow.getState()).to.equal('HARD_RECOVERY')
+        expect(status.backendAvailable).to.equal(false)
+        expect(status.pairingCode).to.equal(undefined)
+
+        await clock.tickAsync(2001)
+        expect(requestStub.calledTwice).to.equal(true)
+        expect(playerFlow.getState()).to.equal('PAIRING_PENDING')
+        expect(playerFlow.getStatus().pairingCode).to.equal('PAIR12')
+
+        await playerFlow.stop()
+      } finally {
+        cleanupTempDir(tempDir)
+        delete process.env.HEXMON_CONFIG_PATH
+        clearRuntimeModules()
       }
     })
   })

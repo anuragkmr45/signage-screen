@@ -57,219 +57,318 @@
       object-fit: contain;
     }
 
-    /* Pairing Screen */
+    /* Enterprise operator surface */
     #pairing-screen {
       position: absolute;
-      top: 0;
-      left: 0;
+      inset: 0;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      background: #050506;
+      color: #f7f7f2;
+      z-index: 20;
+    }
+
+    #pairing-screen.hidden,
+    .hidden {
+      display: none !important;
+    }
+
+    .operator-shell {
       width: 100%;
-      height: 100%;
+      min-height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: clamp(28px, 4vw, 64px);
+      background:
+        linear-gradient(90deg, rgba(55, 198, 163, 0.16) 0, rgba(55, 198, 163, 0) 36%),
+        #050506;
+    }
+
+    .operator-brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .operator-mark {
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(247, 247, 242, 0.2);
+      border-radius: 8px;
+      background: #37c6a3;
+      color: #05110e;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .operator-brand-text {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 40px;
+      gap: 4px;
     }
 
-    #pairing-screen.hidden {
-      display: none;
+    .operator-brand-name {
+      font-size: 20px;
+      font-weight: 750;
     }
 
-    .pairing-logo {
-      font-size: 48px;
-      font-weight: bold;
-      margin-bottom: 40px;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    .operator-brand-meta,
+    .operator-kicker,
+    .operator-detail-label {
+      color: rgba(247, 247, 242, 0.62);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
     }
 
-    .pairing-title {
-      font-size: 32px;
-      margin-bottom: 20px;
+    .operator-main {
+      align-self: center;
+      width: min(980px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
     }
 
-    .pairing-instructions {
-      font-size: 18px;
-      margin-bottom: 40px;
-      text-align: center;
-      max-width: 600px;
-      opacity: 0.9;
+    .operator-title {
+      max-width: 900px;
+      font-size: clamp(44px, 7vw, 88px);
+      line-height: 0.96;
+      font-weight: 760;
+    }
+
+    .operator-message {
+      max-width: 760px;
+      color: rgba(247, 247, 242, 0.78);
+      font-size: clamp(19px, 2.2vw, 28px);
+      line-height: 1.35;
+    }
+
+    .operator-progress {
+      width: min(380px, 68vw);
+      height: 6px;
+      overflow: hidden;
+      border-radius: 6px;
+      background: rgba(247, 247, 242, 0.12);
+    }
+
+    .operator-progress-bar {
+      width: 42%;
+      height: 100%;
+      border-radius: 6px;
+      background: #37c6a3;
+      animation: progressSweep 1.6s ease-in-out infinite;
+    }
+
+    @keyframes progressSweep {
+      0% { transform: translateX(-120%); }
+      50% { transform: translateX(70%); }
+      100% { transform: translateX(260%); }
     }
 
     .pairing-code-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      padding: 24px 32px;
-      margin-bottom: 20px;
-      background: rgba(0, 0, 0, 0.25);
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      text-align: center;
-      min-width: 320px;
+      width: min(620px, 100%);
+      padding: 24px;
+      border: 1px solid rgba(247, 247, 242, 0.18);
+      border-radius: 8px;
+      background: rgba(247, 247, 242, 0.06);
     }
 
-    .pairing-form {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
+    .pairing-code-label {
+      margin-bottom: 12px;
+      color: rgba(247, 247, 242, 0.62);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .pairing-code {
       width: 100%;
-      max-width: 720px;
-      margin-bottom: 24px;
+      min-height: 96px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: #f7f7f2;
+      color: #050506;
+      font-size: clamp(42px, 7vw, 76px);
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-align: center;
+    }
+
+    .pairing-code-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      color: rgba(247, 247, 242, 0.76);
+      font-size: 15px;
+    }
+
+    .operator-details {
+      width: min(760px, 100%);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .operator-detail {
+      min-width: 0;
+      padding: 14px 16px;
+      border: 1px solid rgba(247, 247, 242, 0.14);
+      border-radius: 8px;
+      background: rgba(247, 247, 242, 0.04);
+    }
+
+    .operator-detail-value,
+    .pairing-static {
+      margin-top: 6px;
+      overflow-wrap: anywhere;
+      color: #f7f7f2;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .pairing-status {
+      min-height: 22px;
+      color: rgba(247, 247, 242, 0.72);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .pairing-status.error {
+      color: #ffb3a5;
+    }
+
+    .pairing-status.success {
+      color: #79e1bd;
+    }
+
+    .dev-controls,
+    .network-diagnostics {
+      width: min(760px, 100%);
+      padding: 16px;
+      border: 1px solid rgba(247, 247, 242, 0.14);
+      border-radius: 8px;
+      background: rgba(247, 247, 242, 0.05);
+    }
+
+    .dev-controls {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto auto auto;
+      align-items: end;
+      gap: 12px;
     }
 
     .pairing-field {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      background: rgba(0, 0, 0, 0.2);
-      padding: 12px 16px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
-    .pairing-field label {
+    .pairing-field label,
+    .network-diagnostics h3 {
+      color: rgba(247, 247, 242, 0.62);
       font-size: 12px;
-      letter-spacing: 0.2em;
+      font-weight: 700;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
-      opacity: 0.7;
     }
 
     .pairing-input {
-      background: transparent;
-      border: none;
+      width: 100%;
+      min-height: 42px;
+      padding: 0 12px;
+      border: 1px solid rgba(247, 247, 242, 0.24);
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.28);
       color: #fff;
-      font-size: 16px;
-      font-weight: 600;
+      font-size: 15px;
+      font-weight: 650;
       outline: none;
     }
 
-    .pairing-static {
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    .pairing-code-label {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.3em;
-      opacity: 0.7;
-    }
-
-    .pairing-code {
-      font-size: 56px;
-      font-weight: bold;
-      letter-spacing: 0.2em;
-      padding: 12px 24px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.15);
-      min-width: 320px;
-    }
-
-    .pairing-code-meta {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      font-size: 14px;
-      opacity: 0.85;
-    }
-
     .pairing-button {
-      padding: 15px 40px;
-      font-size: 18px;
-      background: #fff;
-      color: #667eea;
-      border: none;
-      border-radius: 8px;
+      min-height: 42px;
+      padding: 0 18px;
+      border: 1px solid #37c6a3;
+      border-radius: 6px;
+      background: #37c6a3;
+      color: #05110e;
       cursor: pointer;
-      font-weight: bold;
-      transition: transform 0.2s;
-    }
-
-    .pairing-button:hover {
-      transform: scale(1.05);
+      font-size: 14px;
+      font-weight: 760;
+      white-space: nowrap;
     }
 
     .pairing-button:disabled {
-      opacity: 0.5;
       cursor: not-allowed;
+      opacity: 0.45;
     }
 
     .pairing-button.secondary {
       background: transparent;
-      color: #fff;
-      border: 2px solid rgba(255, 255, 255, 0.6);
-    }
-
-    .pairing-actions {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-top: 8px;
-    }
-
-    .pairing-meta {
-      margin-top: 8px;
-      font-size: 14px;
-      opacity: 0.85;
-    }
-
-    .pairing-status {
-      margin-top: 20px;
-      font-size: 16px;
-      min-height: 24px;
-    }
-
-    .pairing-status.error {
-      color: #ff6b6b;
-    }
-
-    .pairing-status.success {
-      color: #51cf66;
-    }
-
-    .network-diagnostics {
-      margin-top: 40px;
-      padding: 20px;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 8px;
-      font-size: 14px;
-      max-width: 600px;
-    }
-
-    .network-diagnostics h3 {
-      margin-bottom: 10px;
+      color: #f7f7f2;
+      border-color: rgba(247, 247, 242, 0.34);
     }
 
     .network-diagnostics ul {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
       list-style: none;
       padding: 0;
     }
 
     .network-diagnostics li {
-      padding: 5px 0;
       display: flex;
       justify-content: space-between;
+      gap: 16px;
+      color: rgba(247, 247, 242, 0.76);
+      font-size: 13px;
     }
 
     .status-indicator {
       display: inline-block;
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       margin-right: 8px;
     }
 
     .status-indicator.online {
-      background-color: #51cf66;
+      background-color: #37c6a3;
     }
 
     .status-indicator.offline {
-      background-color: #ff6b6b;
+      background-color: #e26d5a;
+    }
+
+    .operator-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      color: rgba(247, 247, 242, 0.54);
+      font-size: 13px;
+    }
+
+    .operator-state-pill {
+      padding: 7px 10px;
+      border: 1px solid rgba(247, 247, 242, 0.18);
+      border-radius: 999px;
+      color: rgba(247, 247, 242, 0.76);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
     }
 
     /* Diagnostics Overlay */
@@ -436,10 +535,12 @@
       bottom: 24px;
       left: 24px;
       padding: 10px 16px;
-      border-radius: 12px;
-      background: rgba(255, 107, 107, 0.18);
-      color: #ffd8d8;
+      border: 1px solid rgba(247, 184, 75, 0.28);
+      border-radius: 8px;
+      background: rgba(5, 5, 6, 0.82);
+      color: #f7d38d;
       font-size: 13px;
+      line-height: 1.45;
       z-index: 12;
       max-width: 420px;
     }
@@ -448,46 +549,24 @@
       display: none;
     }
 
-    #recovery-overlay {
-      position: absolute;
-      right: 24px;
-      bottom: 24px;
-      width: min(420px, calc(100vw - 48px));
-      padding: 20px;
-      border-radius: 16px;
-      background: rgba(15, 15, 15, 0.88);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      backdrop-filter: blur(8px);
-      z-index: 15;
-    }
+    @media (max-width: 760px) {
+      .operator-shell {
+        padding: 24px;
+      }
 
-    #recovery-overlay.hidden {
-      display: none;
-    }
+      .operator-details,
+      .dev-controls {
+        grid-template-columns: 1fr;
+      }
 
-    .recovery-title {
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
+      .operator-footer {
+        align-items: flex-start;
+        flex-direction: column;
+      }
 
-    .recovery-reason {
-      font-size: 14px;
-      line-height: 1.5;
-      opacity: 0.9;
-      margin-bottom: 16px;
-    }
-
-    .recovery-actions {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .recovery-meta {
-      margin-top: 12px;
-      font-size: 12px;
-      opacity: 0.75;
+      .pairing-code {
+        min-height: 78px;
+      }
     }
   </style>
 </head>
@@ -514,69 +593,83 @@
   <div id="mode-banner" class="hidden"></div>
   <div id="connectivity-banner" class="hidden"></div>
 
-  <!-- Pairing Screen -->
-  <div id="pairing-screen" class="hidden">
-    <div class="pairing-logo">🖥️ HexmonSignage</div>
-    <h1 class="pairing-title">Device Pairing</h1>
-    <p class="pairing-instructions">
-      Use this code in your CMS to connect this screen. It refreshes automatically when it expires.
-    </p>
+  <!-- Operator Status / Pairing Screen -->
+  <div id="pairing-screen" class="hidden" aria-live="polite">
+    <div class="operator-shell">
+      <header class="operator-brand">
+        <div class="operator-mark">H</div>
+        <div class="operator-brand-text">
+          <div class="operator-brand-name">HexmonSignage Player</div>
+          <div class="operator-brand-meta">Managed display endpoint</div>
+        </div>
+      </header>
 
-    <div class="pairing-form">
-      <div class="pairing-field">
-        <label for="device-label">Device Label</label>
-        <input id="device-label" class="pairing-input" placeholder="Lobby Screen" />
-      </div>
-      <div class="pairing-field">
-        <label>Resolution</label>
-        <div id="device-resolution" class="pairing-static">-</div>
-      </div>
-      <div class="pairing-field">
-        <label>Model</label>
-        <div id="device-model" class="pairing-static">-</div>
-      </div>
+      <main class="operator-main">
+        <div class="operator-kicker" id="operator-kicker">Screen service</div>
+        <h1 class="operator-title" id="operator-title">HexmonSignage Player</h1>
+        <p class="operator-message" id="operator-message">Preparing this screen for service.</p>
+
+        <div class="operator-progress" id="operator-progress">
+          <div class="operator-progress-bar"></div>
+        </div>
+
+        <section class="pairing-code-card hidden" id="pairing-code-card">
+          <div class="pairing-code-label">Connection code</div>
+          <div class="pairing-code" id="pairing-code">- - - - - -</div>
+          <div class="pairing-code-meta">
+            <span id="pairing-expiry">Expires in --:--</span>
+          </div>
+        </section>
+
+        <div class="operator-details">
+          <div class="operator-detail">
+            <div class="operator-detail-label">Screen ID</div>
+            <div class="operator-detail-value" id="pairing-device-id">Not connected</div>
+          </div>
+          <div class="operator-detail">
+            <div class="operator-detail-label">Resolution</div>
+            <div class="operator-detail-value" id="device-resolution">-</div>
+          </div>
+          <div class="operator-detail">
+            <div class="operator-detail-label">Device</div>
+            <div class="operator-detail-value" id="device-model">-</div>
+          </div>
+        </div>
+
+        <div class="pairing-status" id="pairing-status"></div>
+
+        <div class="dev-controls hidden" id="dev-controls">
+          <div class="pairing-field">
+            <label for="device-label">Device Label</label>
+            <input id="device-label" class="pairing-input" placeholder="Lobby Screen" />
+          </div>
+          <button class="pairing-button secondary" id="pairing-refresh">Generate New Code</button>
+          <button class="pairing-button secondary" id="recovery-retry">Retry</button>
+          <button class="pairing-button" id="recovery-repair">Re-pair Device</button>
+          <button class="pairing-button hidden" id="pairing-complete" disabled>Retry Provisioning</button>
+        </div>
+
+        <div class="network-diagnostics hidden" id="network-diagnostics">
+          <h3>Diagnostics</h3>
+          <ul id="diagnostics-list">
+            <li>
+              <span><span class="status-indicator offline"></span>Checking</span>
+              <span>-</span>
+            </li>
+          </ul>
+        </div>
+      </main>
+
+      <footer class="operator-footer">
+        <span id="operator-footer-message">This screen updates automatically.</span>
+        <span class="operator-state-pill" id="operator-state-pill">Starting</span>
+      </footer>
     </div>
-
-    <div class="pairing-code-card">
-      <div class="pairing-code-label">Pairing Code</div>
-      <div class="pairing-code" id="pairing-code">- - - - - -</div>
-      <div class="pairing-code-meta">
-        <span id="pairing-expiry">Expires in --:--</span>
-        <button class="pairing-button secondary" id="pairing-refresh">Generate New Code</button>
-      </div>
-    </div>
-
-    <div class="pairing-actions">
-      <button class="pairing-button" id="pairing-complete" disabled>Retry Provisioning</button>
-    </div>
-
-    <div class="pairing-meta">Device ID: <span id="pairing-device-id">-</span></div>
-    
-    <div class="pairing-status" id="pairing-status"></div>
-
-    <div class="network-diagnostics">
-      <h3>Network Diagnostics</h3>
-      <ul id="diagnostics-list">
-        <li>
-          <span><span class="status-indicator offline"></span>Checking...</span>
-        </li>
-      </ul>
-    </div>
-  </div>
-
-  <div id="recovery-overlay" class="hidden">
-    <div class="recovery-title" id="recovery-title">Recovery Required</div>
-    <div class="recovery-reason" id="recovery-reason">Device runtime needs attention.</div>
-    <div class="recovery-actions">
-      <button class="pairing-button secondary" id="recovery-retry">Retry</button>
-      <button class="pairing-button" id="recovery-repair">Re-pair Device</button>
-    </div>
-    <div class="recovery-meta" id="recovery-meta"></div>
   </div>
 
   <!-- Diagnostics Overlay (Ctrl+Shift+D) -->
   <div id="diagnostics-overlay" class="hidden">
-    <div class="diagnostics-title">📊 Diagnostics</div>
+    <div class="diagnostics-title">Diagnostics</div>
     <div class="diagnostics-row">
       <span class="diagnostics-label">Device ID:</span>
       <span class="diagnostics-value" id="diag-device-id">-</span>
